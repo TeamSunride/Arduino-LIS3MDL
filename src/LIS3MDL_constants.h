@@ -1,0 +1,13 @@
+//
+// Created by robos on 21/09/2022.
+//
+
+#ifndef LIS3MDL_CONSTANTS_H
+#define LIS3MDL_CONSTANTS_H
+
+
+#define LIS3MDL_DEFAULT_I2C_ADDRESS 0x1C
+
+
+
+#endif //LIS3MDL_CONSTANTS_H
