@@ -1,9 +1,18 @@
 #include <Arduino.h>
+#include "LIS3MDL.h"
+
+
+LIS3MDL LIS(&Wire, 1000000); // i2c protocol constructor
+
 
 void setup() {
-// write your initialization code here
+    LIS.begin();
 }
 
 void loop() {
-// write your code here
+    byte who = LIS.who_am_i();
+    Serial.printf("WHO: %X\n", who);
+
+
+    delay(10);
 }
