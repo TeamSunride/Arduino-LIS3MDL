@@ -128,10 +128,16 @@ Vector<double, 3> LIS3MDL::get_mag() {
     byte data[6];
     device->read_regs(LIS3MDL_REGISTER::OUT_X_L, data, 6);
     Vector<double, 3> mag;
-    mag[0] = static_cast<double>( (data[1] << 8) | data[0] ) * mag_conversion_factor;
-    mag[1] = static_cast<double>( (data[3] << 8) | data[2] ) * mag_conversion_factor;
-    mag[2] = static_cast<double>( (data[5] << 8) | data[4] ) * mag_conversion_factor;
+    mag[0] = static_cast<int16_t>( (data[1] << 8) | data[0] ) * mag_conversion_factor;
+    mag[1] = static_cast<int16_t>( (data[3] << 8) | data[2] ) * mag_conversion_factor;
+    mag[2] = static_cast<int16_t>( (data[5] << 8) | data[4] ) * mag_conversion_factor;
     return mag;
+}
+
+void LIS3MDL::default_configuration() {
+    set_mag_ODR(ODR_155_HZ);
+    set_full_scale(FS_16_GAUSS);
+    set_operating_mode(CONTINUOUS_CONVERSION);
 }
 
 
