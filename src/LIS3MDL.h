@@ -15,7 +15,7 @@ class LIS3MDL {
 protected:
     protocol* device;
     double mag_conversion_factor;
-
+    LIS3MDL_REGISTER _reg;
 public:
     LIS3MDL(TwoWire *pipe, uint32_t freq);
 

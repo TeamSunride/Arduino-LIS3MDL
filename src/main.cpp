@@ -2,12 +2,14 @@
 #include "LIS3MDL.h"
 
 
-LIS3MDL LIS(&Wire, 1000000); // i2c protocol constructor
+#define CS 37
+LIS3MDL LIS(CS, SPI, 4000000);
 
 
 void setup() {
     LIS.begin();
     LIS.default_configuration();
+
 }
 
 void loop() {
