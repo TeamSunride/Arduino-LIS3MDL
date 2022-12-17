@@ -1,0 +1,24 @@
+{
+  "name": "Arduino-LIS3MDL",
+  "version": "1.0.0",
+  "description": "PlatformIO / Arduino library designed to make it easy to use the LIS3DML",
+  "keywords": "arduino, sensor, LIS3MDL, adafruit, interrupt, IMU",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/TeamSunride/Arduino-LIS3MDL.git"
+  },
+  "authors":
+  [
+    {
+      "name": "Samuel Scott",
+      "maintainer": true
+    }
+  ],
+  "dependencies":
+  {
+    "TeamSunride/Protocol#v1.0": "https://github.com/TeamSunride/Protocol#v1.0",
+    "TeamSunride/Vector#v1.0": "https://github.com/TeamSunride/Vector#v1.0"
+
+  }
+}
