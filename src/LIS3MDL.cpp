@@ -13,7 +13,7 @@ LIS3MDL::LIS3MDL(TwoWire *pipe, uint32_t freq) {
 LIS3MDL::LIS3MDL(byte chipSelect, SPIClass &spi, uint freq) {
 
     SPISettings settings(freq, MSBFIRST, SPI_MODE3);
-    device = new SPIProtocol(chipSelect, spi, settings, READ_BYTE, WRITE_BYTE); /// Note: Auto increment is enabled by default.
+    device = new SPIProtocol(chipSelect, spi, settings, LIS3MDL_READ_BYTE, LIS3MDL_WRITE_BYTE); /// Note: Auto increment is enabled by default.
     mag_conversion_factor = 1/6842.0; // defaults to 4g full scale
 }
 
