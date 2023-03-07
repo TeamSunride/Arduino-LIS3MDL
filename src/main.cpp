@@ -4,8 +4,9 @@
 
 #define LIS_CS 37
 #define CS_LSM 40
+#define LIS_INT 39
 LIS3MDL::LIS3MDL LIS(LIS_CS, SPI, 4000000);
-
+//LIS3MDL::LIS3MDL LIS(&Wire, 1000000);
 
 
 void setup() {
@@ -16,6 +17,12 @@ void setup() {
     LIS.begin();
     LIS.default_configuration();
     LIS.set_mag_ODR(LIS3MDL::OUTPUT_DATA_RATES::ODR_1000_HZ);
+    LIS.set_interrupt_on_axis(LIS3MDL::AXIS::X_AXIS, true);
+    LIS.set_interrupt_on_axis(LIS3MDL::AXIS::Y_AXIS, true);
+    LIS.set_interrupt_on_axis(LIS3MDL::AXIS::Z_AXIS, true);
+    LIS.set_interrupt_threshold(0.1);
+
+    attachInterrupt(digitalPinToInterrupt(LIS_INT), LIS.interrupt_service_routine, CHANGE);
 }
 
 void loop() {

@@ -52,6 +52,12 @@ namespace LIS3MDL {
         POWER_DOWN = 0b10
     };
 
+    enum AXIS {
+        X_AXIS = 0b100,
+        Y_AXIS = 0b010,
+        Z_AXIS = 0b001
+    };
+
 }
 
 #endif //LIS3MDL_CONSTANTS_H

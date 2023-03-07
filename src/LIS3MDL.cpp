@@ -14,7 +14,8 @@ namespace LIS3MDL {
     LIS3MDL::LIS3MDL(byte chipSelect, SPIClass &spi, uint freq) {
 
         SPISettings settings(freq, MSBFIRST, SPI_MODE3);
-        device = new SPIProtocol(chipSelect, spi, settings, READ_BYTE, WRITE_BYTE); /// Note: Auto increment is enabled by default.
+        device = new SPIProtocol(chipSelect, spi, settings, READ_BYTE,
+                                 WRITE_BYTE); /// Note: Auto increment is enabled by default.
         mag_conversion_factor = 1 / 6842.0; // defaults to 4g full scale
     }
 
@@ -41,14 +42,16 @@ namespace LIS3MDL {
             case ODR_155_HZ: {
                 setBit(&data, 1, true); // enable fastODR
                 data &= 0b10011111; // clear OM bits
-                data |= (AXIS_OPERATING_MODE::ULTRA_HIGH_PERFORMANCE << 5); // set OM bits to 11 for ultra-high performance mode
+                data |= (AXIS_OPERATING_MODE::ULTRA_HIGH_PERFORMANCE
+                        << 5); // set OM bits to 11 for ultra-high performance mode
 //                data |= 0b01100000; // set OM bits to 11 for ultra-high performance mode
                 uint8_t a = device->write_reg(REGISTER::CTRL_REG1, data); // sets X and Y axes
 
                 // now for Z axis
                 byte ctrl4 = device->read_reg(REGISTER::CTRL_REG4);
                 ctrl4 &= 0b11110011; // clear OM bits
-                ctrl4 |= (AXIS_OPERATING_MODE::ULTRA_HIGH_PERFORMANCE << 2); // set OM bits to 11 for ultra-high performance mode
+                ctrl4 |= (AXIS_OPERATING_MODE::ULTRA_HIGH_PERFORMANCE
+                        << 2); // set OM bits to 11 for ultra-high performance mode
 //                ctrl4 &= 0b11110011; // set OM bits to 11 for ultra-high performance mode
                 uint8_t b = device->write_reg(REGISTER::CTRL_REG4, ctrl4);
                 return a && b; // zero for success
@@ -78,7 +81,8 @@ namespace LIS3MDL {
                 // now for Z axis
                 byte ctrl4 = device->read_reg(REGISTER::CTRL_REG4);
                 ctrl4 &= 0b11110011; // clear OM bits
-                ctrl4 |= (AXIS_OPERATING_MODE::MEDIUM_PERFORMANCE << 2); // set OM bits to 01 for medium performance mode
+                ctrl4 |= (AXIS_OPERATING_MODE::MEDIUM_PERFORMANCE
+                        << 2); // set OM bits to 01 for medium performance mode
 //                ctrl4 |= 0b00100000; // set OM bits to 01 for medium performance mode
                 uint8_t b = device->write_reg(REGISTER::CTRL_REG4, ctrl4);
                 return a && b; // zero for success
@@ -164,14 +168,26 @@ namespace LIS3MDL {
         return device->write_reg(REGISTER::CTRL_REG4, data);
     }
 
+    uint8_t LIS3MDL::set_fast_read(bool enable) {
+        byte data = device->read_reg(REGISTER::CTRL_REG5);
+        setBit(&data, 7, enable);
+        return device->write_reg(REGISTER::CTRL_REG5, data);
+    }
+
+    uint8_t LIS3MDL::block_output_data_update(bool enable) {
+        byte data = device->read_reg(REGISTER::CTRL_REG5);
+        setBit(&data, 6, enable);
+        return device->write_reg(REGISTER::CTRL_REG5, data);
+    }
+
     Vector<int16_t, 3> LIS3MDL::get_raw_mag() {
         byte data[6];
         device->read_regs(REGISTER::OUT_X_L, data, 6);
         Vector<int16_t, 3> raw_mag;
         // defaults to big endian, so we are using big endian.
-        raw_mag[0] = (data[1] << 8) | data[0];
-        raw_mag[1] = (data[3] << 8) | data[2];
-        raw_mag[2] = (data[5] << 8) | data[4];
+        raw_mag[0] = (int16_t) ((data[1] << 8) | data[0]);
+        raw_mag[1] = (int16_t) ((data[3] << 8) | data[2]);
+        raw_mag[2] = (int16_t) ((data[5] << 8) | data[4]);
         return raw_mag;
     }
 
@@ -200,15 +216,48 @@ namespace LIS3MDL {
         return static_cast<int16_t>((data[1] << 8) | data[0]) / 8.0 + 25.0;
     }
 
+    uint8_t LIS3MDL::get_mag_drdy_status() {
+        byte data = device->read_reg(REGISTER::STATUS_REG);
+        return getBit(data, 3);
+    }
+
+    uint8_t LIS3MDL::set_interrupt_on_axis(AXIS axis, bool enable) {
+        byte data = device->read_reg(REGISTER::INT_CFG);
+        data &= 0b00011111; // clea bits 7, 6 and 5
+        data |= (axis << 5);
+        return device->write_reg(REGISTER::INT_CFG, data);
+    }
+
+    uint8_t LIS3MDL::set_interrupt_active_high(bool enable) {
+        byte data = device->read_reg(REGISTER::INT_CFG);
+        setBit(&data, 2, enable);
+        return device->write_reg(REGISTER::INT_CFG, data);
+    }
+
+    uint8_t LIS3MDL::set_interrupt_threshold(double threshold) {
+        int16_t threshold_raw = threshold / mag_conversion_factor;
+        byte data[2];
+        data[0] = threshold_raw & 0xFF;
+        data[1] = (threshold_raw >> 8) & 0xFF;
+        return device->write_regs(REGISTER::INT_THS_L, data, 2);
+    }
+
+    void LIS3MDL::interrupt_service_routine() {
+        Serial.println("AN INTERRUPT HAS OCCURRED");
+        delay(100);
+    }
+
+
     void LIS3MDL::default_configuration() {
         enable_temp_sensor(true);
+        block_output_data_update(true);
+
+        set_interrupt_on_axis(AXIS::Z_AXIS, true);
+
         set_mag_ODR(ODR_300_HZ);
         set_full_scale(FS_16_GAUSS);
         set_operating_mode(CONTINUOUS_CONVERSION);
     }
-
-
-
 
 }
 
