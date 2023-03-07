@@ -10,51 +10,54 @@
 #include "LIS3MDL_registers.h"
 #include "LIS3MDL_constants.h"
 
+namespace LIS3MDL {
 
-class LIS3MDL {
-protected:
-    protocol* device;
-    double mag_conversion_factor;
-    LIS3MDL_REGISTER _reg;
-public:
-    LIS3MDL(TwoWire *pipe, uint32_t freq);
+    class LIS3MDL {
+    protected:
+        protocol *device;
+        double mag_conversion_factor;
+//        REGISTER _reg;
 
-    LIS3MDL(byte chipSelect, SPIClass& spi, uint freq);
+    public:
+        LIS3MDL(TwoWire *pipe, uint32_t freq);
 
-    void begin() {
-        device->protocol_begin();
-    }
+        LIS3MDL(byte chipSelect, SPIClass &spi, uint freq);
 
-    byte who_am_i();
+        void begin() {
+            device->protocol_begin();
+        }
 
-    uint8_t enable_temp_sensor(bool enable);
+        byte who_am_i();
 
-    uint8_t set_mag_ODR(LIS3MDL_OUTPUT_DATA_RATES odr);
+        uint8_t enable_temp_sensor(bool enable);
 
-    // Self test enable
+        uint8_t set_mag_ODR(OUTPUT_DATA_RATES odr);
 
-    uint8_t set_full_scale(LIS3MDL_FULL_SCALE full_scale);
+        // Self test enable
 
-    // REBOOT
-    // SOFT_RST
+        uint8_t set_full_scale(FULL_SCALE full_scale);
 
-    // LP
-    // SIM
-    uint8_t set_operating_mode(LIS3MDL_OPERATING_MODE mode);
+        // REBOOT
+        // SOFT_RST
 
-    // BLE
+        // LP
+        // SIM
+        uint8_t set_operating_mode(SYSTEM_OPERATING_MODE mode);
 
-    // FAST_READ
-    // BDU
+        // BLE
 
-    Vector<double, 3> get_mag();
+        // FAST_READ
+        // BDU
 
-
-
+        Vector<double, 3> get_mag();
 
 
-    void default_configuration();
+        void default_configuration();
 
-};
+    };
+
+}
+
 
 #endif //LIS3MDL_H
+
