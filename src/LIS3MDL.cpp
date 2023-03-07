@@ -8,15 +8,13 @@ namespace LIS3MDL {
     LIS3MDL::LIS3MDL(TwoWire *pipe, uint32_t freq) {
         device = new I2CProtocol(LIS3MDL_DEFAULT_I2C_ADDRESS, pipe, freq);
         mag_conversion_factor = 1 / 6842.0; // defaults to 4g full scale
-//        _reg = REGISTER();
 
     }
 
     LIS3MDL::LIS3MDL(byte chipSelect, SPIClass &spi, uint freq) {
 
         SPISettings settings(freq, MSBFIRST, SPI_MODE3);
-        device = new SPIProtocol(chipSelect, spi, settings, READ_BYTE,
-                                 WRITE_BYTE); /// Note: Auto increment is enabled by default.
+        device = new SPIProtocol(chipSelect, spi, settings, READ_BYTE, WRITE_BYTE); /// Note: Auto increment is enabled by default.
         mag_conversion_factor = 1 / 6842.0; // defaults to 4g full scale
     }
 
@@ -129,6 +127,30 @@ namespace LIS3MDL {
         return device->write_reg(REGISTER::CTRL_REG2, data);
     }
 
+    uint8_t LIS3MDL::reboot_memory_content() {
+        byte data = device->read_reg(REGISTER::CTRL_REG2);
+        setBit(&data, 3, true); // set reboot bit
+        return device->write_reg(REGISTER::CTRL_REG2, data);
+    }
+
+    uint8_t LIS3MDL::soft_reset() {
+        byte data = device->read_reg(REGISTER::CTRL_REG2);
+        setBit(&data, 2, true); // set soft reset bit
+        return device->write_reg(REGISTER::CTRL_REG2, data);
+    }
+
+    uint8_t LIS3MDL::enter_low_power_mode(bool enable) {
+        byte data = device->read_reg(REGISTER::CTRL_REG3);
+        setBit(&data, 5, enable); // set LP bit
+        return device->write_reg(REGISTER::CTRL_REG3, data);
+    }
+
+    uint8_t LIS3MDL::set_spi_mode_3_wire(bool enable) {
+        byte data = device->read_reg(REGISTER::CTRL_REG3);
+        setBit(&data, 2, enable); // set SIM bit
+        return device->write_reg(REGISTER::CTRL_REG3, data);
+    }
+
     uint8_t LIS3MDL::set_operating_mode(SYSTEM_OPERATING_MODE mode) {
         byte data = device->read_reg(REGISTER::CTRL_REG3);
         data &= 0b11111100; // clear MD bits
@@ -136,21 +158,56 @@ namespace LIS3MDL {
         return device->write_reg(REGISTER::CTRL_REG3, data);
     }
 
+    uint8_t LIS3MDL::set_little_endian(bool enable) {
+        byte data = device->read_reg(REGISTER::CTRL_REG4);
+        setBit(&data, 1, enable);
+        return device->write_reg(REGISTER::CTRL_REG4, data);
+    }
+
+    Vector<int16_t, 3> LIS3MDL::get_raw_mag() {
+        byte data[6];
+        device->read_regs(REGISTER::OUT_X_L, data, 6);
+        Vector<int16_t, 3> raw_mag;
+        // defaults to big endian, so we are using big endian.
+        raw_mag[0] = (data[1] << 8) | data[0];
+        raw_mag[1] = (data[3] << 8) | data[2];
+        raw_mag[2] = (data[5] << 8) | data[4];
+        return raw_mag;
+    }
+
+    Vector<double, 3> LIS3MDL::convert_raw_mag_to_gauss(Vector<int16_t, 3> raw_mag) {
+        Vector<double, 3> mag;
+        mag[0] = raw_mag[0] * mag_conversion_factor;
+        mag[1] = raw_mag[1] * mag_conversion_factor;
+        mag[2] = raw_mag[2] * mag_conversion_factor;
+        return mag;
+    }
+
     Vector<double, 3> LIS3MDL::get_mag() {
         byte data[6];
         device->read_regs(REGISTER::OUT_X_L, data, 6);
         Vector<double, 3> mag;
+        // defaults to big endian, so we are using big endian.
         mag[0] = static_cast<int16_t>((data[1] << 8) | data[0] ) * mag_conversion_factor;
         mag[1] = static_cast<int16_t>((data[3] << 8) | data[2] ) * mag_conversion_factor;
         mag[2] = static_cast<int16_t>((data[5] << 8) | data[4] ) * mag_conversion_factor;
         return mag;
     }
 
+    double LIS3MDL::get_temp_celsius() {
+        byte data[2];
+        device->read_regs(REGISTER::TEMP_OUT_L, data, 2);
+        return static_cast<int16_t>((data[1] << 8) | data[0]) / 8.0 + 25.0;
+    }
+
     void LIS3MDL::default_configuration() {
+        enable_temp_sensor(true);
         set_mag_ODR(ODR_300_HZ);
         set_full_scale(FS_16_GAUSS);
         set_operating_mode(CONTINUOUS_CONVERSION);
     }
+
+
 
 
 }

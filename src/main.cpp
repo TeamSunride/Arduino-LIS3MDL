@@ -19,7 +19,9 @@ void setup() {
 }
 
 void loop() {
-    Vector<double, 3> mag = LIS.get_mag();
+    Vector<int16_t, 3> mag_i = LIS.get_raw_mag();
+    Vector<double, 3> mag = LIS.convert_raw_mag_to_gauss(mag_i);
     Serial.printf("MAG: %lf, %lf, %lf\n", mag[0], mag[1], mag[2]);
+//    Serial.printf("TEMP: %lf\n", LIS.get_temp_celsius());
     delay(1);
 }
