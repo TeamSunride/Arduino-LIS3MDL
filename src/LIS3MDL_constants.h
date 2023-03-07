@@ -5,8 +5,8 @@
 #ifndef LIS3MDL_CONSTANTS_H
 #define LIS3MDL_CONSTANTS_H
 
-#define WRITE_BYTE 0b01000000 /// Auto increment (bit 1) enabled by default.
-#define READ_BYTE 0b11000000
+#define LIS3MDL_WRITE_BYTE 0b01000000 /// Auto increment (bit 1) enabled by default.
+#define LIS3MDL_READ_BYTE 0b11000000
 
 #define LIS3MDL_DEFAULT_I2C_ADDRESS 0x1C
 
