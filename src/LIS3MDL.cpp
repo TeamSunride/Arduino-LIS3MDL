@@ -106,6 +106,95 @@ namespace LIS3MDL {
         return -1;
     }
 
+    uint8_t LIS3MDL::perform_self_test() {
+        /// NOTE: THIS CHANGES THE ODRS AND FULL SCALES OF THE MAGNETOMETER
+        // TODO: add a way to restore the previous settings
+
+
+        Serial.println("Self test procedure, please keep the device still");
+        // Init sensor, FS = 12 Gauss,  Continuous-Measurement mode, ODR = 80 Hz
+        device->write_reg(REGISTER::CTRL_REG1, 0X1C);
+        device->write_reg(REGISTER::CTRL_REG2, 0X40);
+        delay(20); // wait 20ms
+        device->write_reg(REGISTER::CTRL_REG3, 0X00);
+
+        // Power up, check the ZYXDA bit in the STATUS_REG register
+        while(!get_mag_drdy_status());
+        get_raw_mag(); // read the OUT regs and discard the data
+
+        // Average 5 samples
+        Vector<int32_t , 3> average_NOST = {0, 0, 0};
+        for (int i = 0; i < 5; i++) {
+            while(!get_mag_drdy_status());
+            Vector<int16_t, 3> raw = get_raw_mag();
+            average_NOST += (Vector<int32_t, 3>) raw; // sum the values
+        }
+        average_NOST /= 5; // divide by 5 to get the average
+
+        // Enable self test
+        device->write_reg(REGISTER::CTRL_REG1, 0X1D);
+        delay(60); // wait 60ms
+
+        // Power up, check the ZYXDA bit in the STATUS_REG register
+        while(!get_mag_drdy_status());
+        get_raw_mag(); // read the OUT regs and discard the data
+
+        Vector<int16_t, 3> minST = {0, 0, 0};
+        Vector<int16_t, 3> maxST = {0, 0, 0};
+        Vector<int32_t, 3> average_ST = {0, 0, 0};
+        // Take 5 samples
+        Vector<int16_t, 3> raw;
+        for (int i = 0; i < 5; i++) {
+            while(!get_mag_drdy_status());
+            raw = get_raw_mag();
+            average_ST += (Vector<int32_t, 3>) raw; // sum the values
+
+            // find the min and max values of each axis
+            for (int j = 0; j < 3; j++) {
+                if (raw[j] < minST[j]) {
+                    minST[j] = raw[j];
+                }
+                if (raw[j] > maxST[j]) {
+                    maxST[j] = raw[j];
+                }
+            }
+        }
+        average_ST /= 5; // divide by 5 to get the average
+
+        // Disable self test
+        device->write_reg(REGISTER::CTRL_REG1, 0X1C);
+
+        // Print out all the min, max, average and raw values
+        Serial.println("Min, Max, Average_NOST, Average_ST, Raw");
+        for (int i = 0; i < 3; i++) {
+            Serial.print(minST[i]);
+            Serial.print(", ");
+            Serial.print(maxST[i]);
+            Serial.print(", ");
+            Serial.print(average_NOST[i]);
+            Serial.print(", ");
+            Serial.print(average_ST[i]);
+            Serial.print(", ");
+            Serial.println(raw[i]);
+        }
+
+        // Calculate if the self test passed
+//        for (int i = 0; i < 3; i++) {
+//            pass &= (abs(minST[i]) <= (raw[i] - average_NOST[i])) &&
+//                    ((raw[i] - average_NOST[i]) <= abs(maxST[i]));
+//        }
+        if (    (abs(minST[0]) <= (average_ST[0] - average_NOST[0])) && ((average_ST[0] - average_NOST[0]) <= abs(maxST[0])) &&
+                (abs(minST[1]) <= (average_ST[1] - average_NOST[1])) && ((average_ST[1] - average_NOST[1]) <= abs(maxST[1]))
+//                (abs(minST[2]) <= (average_ST[2] - average_NOST[2])) && ((average_ST[2] - average_NOST[2]) <= abs(maxST[2]))
+                ) {
+            return true;
+        }
+        else{
+            return false;
+        }
+
+    }
+
     uint8_t LIS3MDL::set_full_scale(FULL_SCALE full_scale) {
         switch (full_scale) {
             case FS_4_GAUSS: {
@@ -218,13 +307,12 @@ namespace LIS3MDL {
 
     uint8_t LIS3MDL::get_mag_drdy_status() {
         byte data = device->read_reg(REGISTER::STATUS_REG);
-        return getBit(data, 3);
+        return getBit(data, 3); /// get ZYXDA bit
     }
 
     uint8_t LIS3MDL::set_interrupt_on_axis(AXIS axis, bool enable) {
         byte data = device->read_reg(REGISTER::INT_CFG);
-        data &= 0b00011111; // clea bits 7, 6 and 5
-        data |= (axis << 5);
+        data |= (enable << (6 + axis)); // set XIE, YIE, or ZIE bit
         return device->write_reg(REGISTER::INT_CFG, data);
     }
 
@@ -242,17 +330,24 @@ namespace LIS3MDL {
         return device->write_regs(REGISTER::INT_THS_L, data, 2);
     }
 
+    uint8_t LIS3MDL::enable_interrupt(bool enable) {
+        byte data = device->read_reg(REGISTER::INT_CFG);
+        setBit(&data, 0, enable);
+        return device->write_reg(REGISTER::INT_CFG, data);
+    }
+
     void LIS3MDL::interrupt_service_routine() {
         Serial.println("AN INTERRUPT HAS OCCURRED");
-        delay(100);
     }
+
+
 
 
     void LIS3MDL::default_configuration() {
         enable_temp_sensor(true);
+        set_interrupt_active_high(true);
         block_output_data_update(true);
-
-        set_interrupt_on_axis(AXIS::Z_AXIS, true);
+        enable_interrupt(true);
 
         set_mag_ODR(ODR_300_HZ);
         set_full_scale(FS_16_GAUSS);

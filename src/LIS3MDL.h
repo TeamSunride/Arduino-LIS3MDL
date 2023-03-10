@@ -48,6 +48,7 @@ namespace LIS3MDL {
         uint8_t set_mag_ODR(OUTPUT_DATA_RATES odr);
 
         // Self test enable
+        uint8_t perform_self_test();
 
         /**
          * @brief Set the full scale for the magnetometer.
@@ -144,7 +145,7 @@ namespace LIS3MDL {
 
 
         /**
-         * @brief Get the status of the magnetometer data ready flag
+         * @brief Get the ZYXDA bit status of the magnetometer data ready flag
          * @return The status of the magnetometer data ready flag (1 for ready, 0 for not ready)
          */
         uint8_t get_mag_drdy_status();
@@ -170,6 +171,13 @@ namespace LIS3MDL {
          * @return Status Code (0 for success)
          */
         uint8_t set_interrupt_threshold(double threshold);
+
+        /**
+         * @brief enable or disable the interrupt
+         * @param enable
+         * @return Status Code (0 for success)
+         */
+        uint8_t enable_interrupt(bool enable);
 
         /**
          * @brief A predefined interrupt service routine.

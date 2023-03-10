@@ -53,9 +53,20 @@ namespace LIS3MDL {
     };
 
     enum AXIS {
-        X_AXIS = 0b100,
-        Y_AXIS = 0b010,
-        Z_AXIS = 0b001
+        X_AXIS = 2,
+        Y_AXIS = 1,
+        Z_AXIS = 0
+    };
+
+    enum INTERRUPTS {
+        PTH_X = 7,
+        PTH_Y = 6,
+        PTH_Z = 5,
+        NTH_X = 4,
+        NTH_Y = 3,
+        NTH_Z = 2,
+        MROI = 1
+                //        INT =  0b00000001
     };
 
 }
