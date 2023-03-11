@@ -118,18 +118,20 @@ namespace LIS3MDL {
         delay(20); // wait 20ms
         device->write_reg(REGISTER::CTRL_REG3, 0X00);
 
+        delay(20);
         // Power up, check the ZYXDA bit in the STATUS_REG register
         while(!get_mag_drdy_status());
-        get_raw_mag(); // read the OUT regs and discard the data
+        Vector<double , 3> discard = get_mag(); // read the OUT regs and discard the data
 
         // Average 5 samples
-        Vector<int32_t , 3> average_NOST = {0, 0, 0};
-        for (int i = 0; i < 5; i++) {
+        Vector<double , 3> average_NOST = {0, 0, 0};
+        for (int i = 0; i < 20; i++) {
             while(!get_mag_drdy_status());
-            Vector<int16_t, 3> raw = get_raw_mag();
-            average_NOST += (Vector<int32_t, 3>) raw; // sum the values
+            Vector<double, 3> raw = get_mag();
+            average_NOST += raw; // sum the values
+            delay(20);
         }
-        average_NOST /= 5; // divide by 5 to get the average
+        average_NOST /= 20; // divide by 5 to get the average
 
         // Enable self test
         device->write_reg(REGISTER::CTRL_REG1, 0X1D);
@@ -137,40 +139,27 @@ namespace LIS3MDL {
 
         // Power up, check the ZYXDA bit in the STATUS_REG register
         while(!get_mag_drdy_status());
-        get_raw_mag(); // read the OUT regs and discard the data
+        Vector<double , 3> discard2 = get_mag(); // read the OUT regs and discard the data
 
-        Vector<int16_t, 3> minST = {0, 0, 0};
-        Vector<int16_t, 3> maxST = {0, 0, 0};
-        Vector<int32_t, 3> average_ST = {0, 0, 0};
+
+        Vector<double, 3> average_ST = {0, 0, 0};
         // Take 5 samples
-        Vector<int16_t, 3> raw;
-        for (int i = 0; i < 5; i++) {
+        Vector<double, 3> raw;
+        for (int i = 0; i < 20; i++) {
             while(!get_mag_drdy_status());
-            raw = get_raw_mag();
-            average_ST += (Vector<int32_t, 3>) raw; // sum the values
+            raw = get_mag();
+            average_ST += raw; // sum the values
 
-            // find the min and max values of each axis
-            for (int j = 0; j < 3; j++) {
-                if (raw[j] < minST[j]) {
-                    minST[j] = raw[j];
-                }
-                if (raw[j] > maxST[j]) {
-                    maxST[j] = raw[j];
-                }
-            }
+            delay(20);
         }
-        average_ST /= 5; // divide by 5 to get the average
+        average_ST /= 20; // divide by 5 to get the average
 
         // Disable self test
         device->write_reg(REGISTER::CTRL_REG1, 0X1C);
 
         // Print out all the min, max, average and raw values
-        Serial.println("Min, Max, Average_NOST, Average_ST, Raw");
+        Serial.println("Average_NOST, Average_ST, Raw");
         for (int i = 0; i < 3; i++) {
-            Serial.print(minST[i]);
-            Serial.print(", ");
-            Serial.print(maxST[i]);
-            Serial.print(", ");
             Serial.print(average_NOST[i]);
             Serial.print(", ");
             Serial.print(average_ST[i]);
@@ -183,13 +172,13 @@ namespace LIS3MDL {
 //            pass &= (abs(minST[i]) <= (raw[i] - average_NOST[i])) &&
 //                    ((raw[i] - average_NOST[i]) <= abs(maxST[i]));
 //        }
-        if (    (abs(minST[0]) <= (average_ST[0] - average_NOST[0])) && ((average_ST[0] - average_NOST[0]) <= abs(maxST[0])) &&
-                (abs(minST[1]) <= (average_ST[1] - average_NOST[1])) && ((average_ST[1] - average_NOST[1]) <= abs(maxST[1]))
-//                (abs(minST[2]) <= (average_ST[2] - average_NOST[2])) && ((average_ST[2] - average_NOST[2]) <= abs(maxST[2]))
+        if (    (abs(1.0) <= abs(average_ST[0] - average_NOST[0])) && (abs(average_ST[0] - average_NOST[0]) <= abs(3.0)) && // limits fpr
+                (abs(1.0) <= abs(average_ST[1] - average_NOST[1])) && (abs(average_ST[1] - average_NOST[1]) <= abs(3.0)) &&
+                (abs(0.1) <= abs(average_ST[2] - average_NOST[2])) && (abs(average_ST[2] - average_NOST[2]) <= abs(1.0))
                 ) {
             return true;
         }
-        else{
+        else {
             return false;
         }
 

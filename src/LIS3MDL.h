@@ -185,7 +185,7 @@ namespace LIS3MDL {
         static void interrupt_service_routine();
 
         /**
-         * @brief A defualt configuration for the magnetometer - use always call this in your setup.
+         * @brief A default configuration for the magnetometer - use always call this in your setup.
          */
         void default_configuration();
 
